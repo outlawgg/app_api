@@ -1,10 +1,45 @@
-from fastapi import FastAPI
-
+from fastapi import FastAPI, File, UploadFile
+from typing import List # an API that the end-user can access.
+import shutil
+import os
+from predict import predict
+import requests
+# intialising the fastapi.
 app = FastAPI()
 
-#domain where this api is hosted for example : localhost:5000/docs to see swagger documentation automagically generated.
+# path = os.getcwd()+"\data"
+# os.mkdir(path)
+# url = 1
+#
+#
+# shutil.rmtree(path)
+
+#files: List[UploadFile] = File(...)
+@app.post("/pred")
+def pred(files: List[UploadFile] = File(...)):
+
+    path = os.getcwd() + "\\data"
+
+    try:
+        shutil.rmtree(path)
+    except Exception:
+        pass
+    os.mkdir(path)
 
 
-@app.get("/")
-def home():
-    return {"message":"Hello TutLinks.com"}
+    for file in files:
+        try:
+            contents = file.file.read()
+            with open(path+"\\"+file.filename, 'wb') as f:
+                f.write(contents)
+        except Exception:
+            pass
+        finally:
+            file.file.close()
+    d = {}
+    fs = os.listdir(path)
+    for i in fs:
+        d[i] = predict(path+"\\"+i)
+    shutil.rmtree(path)
+
+    return d
